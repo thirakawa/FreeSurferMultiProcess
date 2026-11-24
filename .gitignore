@@ -6,3 +6,5 @@ fs_license/
 logs_docker/
 
 __pycache__/
+
+*.sif

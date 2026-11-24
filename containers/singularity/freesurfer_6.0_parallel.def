@@ -24,6 +24,12 @@ From: freesurfer/freesurfer:6.0
     # --------------------------------------------------
     ln -s /fs_license/license.txt /opt/freesurfer/license.txt
 
+    # --------------------------------------------------
+    # 実行時の bind 先 (scripts/singularity/ のジョブが使う)。
+    # underlay が無効なクラスタでも bind できるよう、ディレクトリを作っておく。
+    # --------------------------------------------------
+    mkdir -p /input /output /fs_license /run_dir
+
 %test
     parallel --version | head -n 1
     command -v recon-all

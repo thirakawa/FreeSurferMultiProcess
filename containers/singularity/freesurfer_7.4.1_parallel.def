@@ -42,12 +42,19 @@ REPO
     # --------------------------------------------------
     dnf clean all
     dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
-    dnf install -y parallel
+    # hostname: recon-all が IsRunning.* の HOST に書く (ベースイメージに無い)
+    dnf install -y parallel hostname
     dnf clean all
     rm -rf /var/cache/dnf
 
     # Verify installation
     parallel --version
+
+    # --------------------------------------------------
+    # 実行時の bind 先 (scripts/singularity/ のジョブが使う)。
+    # underlay が無効なクラスタでも bind できるよう、ディレクトリを作っておく。
+    # --------------------------------------------------
+    mkdir -p /input /output /fs_license /run_dir
 
 %test
     parallel --version

@@ -15,12 +15,19 @@ From: freesurfer/freesurfer:8.2.0
     # --------------------------------------------------
     # Install GNU Parallel
     # --------------------------------------------------
-    dnf install -y parallel
+    # hostname: recon-all が IsRunning.* の HOST に書く (ベースイメージに無い)
+    dnf install -y parallel hostname
     dnf clean all
     rm -rf /var/cache/dnf
 
     # Verify installation
     parallel --version
+
+    # --------------------------------------------------
+    # 実行時の bind 先 (scripts/singularity/ のジョブが使う)。
+    # underlay が無効なクラスタでも bind できるよう、ディレクトリを作っておく。
+    # --------------------------------------------------
+    mkdir -p /input /output /fs_license /run_dir
 
 %test
     parallel --version
