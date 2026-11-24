@@ -1,0 +1,29 @@
+Bootstrap: docker
+From: freesurfer/freesurfer:6.0
+
+%labels
+    Maintainer Tsubasa Hirakawa <hirakawa@mprg.cs.chubu.ac.jp>
+    Description FreeSurfer 6.0 with GNU Parallel
+
+%post
+    # --------------------------------------------------
+    # ベースは Ubuntu 14.04 (trusty)。7.4.1 / 8.2.0 (RHEL 系) と違い apt を使う。
+    # GNU Parallel は trusty-backports の 20161222 が入る。
+    # --------------------------------------------------
+    apt-get update
+    apt-get install -y --no-install-recommends parallel
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Verify installation
+    parallel --version | head -n 1
+
+    # --------------------------------------------------
+    # FreeSurfer 6.0 は環境変数 FS_LICENSE を見ず、$FREESURFER_HOME/license.txt だけを読む。
+    # 実行時に /fs_license/license.txt へライセンスを bind すれば使えるよう、シンボリックリンクを張る。
+    # --------------------------------------------------
+    ln -s /fs_license/license.txt /opt/freesurfer/license.txt
+
+%test
+    parallel --version | head -n 1
+    command -v recon-all

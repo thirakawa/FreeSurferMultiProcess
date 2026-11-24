@@ -1,0 +1,8 @@
+license.txt
+fs_license/
+
+.claude/
+
+logs_docker/
+
+__pycache__/

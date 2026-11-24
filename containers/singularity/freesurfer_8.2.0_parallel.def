@@ -1,0 +1,27 @@
+Bootstrap: docker
+From: freesurfer/freesurfer:8.2.0
+
+%labels
+    Maintainer Tsubasa Hirakawa <hirakawa@mprg.cs.chubu.ac.jp>
+    Description FreeSurfer 8.2.0 with GNU Parallel
+
+%post
+    # --------------------------------------------------
+    # Enable EPEL and PowerTools repositories
+    # --------------------------------------------------
+    dnf install -y dnf-plugins-core epel-release
+    dnf config-manager --set-enabled powertools
+
+    # --------------------------------------------------
+    # Install GNU Parallel
+    # --------------------------------------------------
+    dnf install -y parallel
+    dnf clean all
+    rm -rf /var/cache/dnf
+
+    # Verify installation
+    parallel --version
+
+%test
+    parallel --version
+    command -v recon-all

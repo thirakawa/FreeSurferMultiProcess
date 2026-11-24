@@ -1,0 +1,22 @@
+FROM freesurfer/freesurfer:8.2.0
+
+LABEL maintainer="Tsubasa Hirakawa <hirakawa@mprg.cs.chubu.ac.jp>"
+LABEL description="FreeSurfer 8.2.0 with GNU Parallel"
+
+# --------------------------------------------------
+# Enable EPEL and PowerTools repositories
+# --------------------------------------------------
+RUN dnf install -y dnf-plugins-core epel-release && \
+    dnf config-manager --set-enabled powertools
+
+# --------------------------------------------------
+# Install GNU Parallel
+# --------------------------------------------------
+RUN dnf install -y parallel && \
+    dnf clean all && \
+    rm -rf /var/cache/dnf
+
+# Verify installation
+RUN parallel --version
+
+WORKDIR /workspace
