@@ -4,7 +4,7 @@
 # 環境変数: RECON_FLAGS, THREADS_PER_JOB, JOB_TIMEOUT, RETRY_TIMEOUT
 # マウント: /input (rawdata), /output (SUBJECTS_DIR)
 #
-# 判定 (scripts/check_status.sh と同じ基準):
+# 判定 (scripts/singularity/check_status.sh と同じ基準):
 #   完了     : recon-all.done に END_TIME があり、それより新しい recon-all.error がない → スキップ
 #              (FreeSurfer 6 / 8 は失敗時にも "1" だけの recon-all.done を作るので、done の有無だけでは判定しない)
 #   時間切れ : recon-all.timeout がある → スキップ (RETRY_TIMEOUT=1 ならやり直す)
@@ -34,6 +34,14 @@ to_seconds() {
 }
 [[ "$JOB_TIMEOUT" =~ ^[0-9]+[smhd]?$ ]] || { echo "ERROR: invalid JOB_TIMEOUT=$JOB_TIMEOUT (例: 24h)" >&2; exit 2; }
 LIMIT_SEC=$(to_seconds "$JOB_TIMEOUT")
+
+# イメージに hostname コマンドが無い場合 (7.4.1 の CentOS Stream 8 など) の代わり。
+# recon-all は `hostname` の結果を IsRunning.* の HOST に書き、check_status.sh はそれで実行中かを判定する。
+if ! command -v hostname >/dev/null 2>&1; then
+    shim="$(mktemp -d)"; trap 'rm -rf "$shim"' EXIT
+    printf '#!/bin/sh\ncat /proc/sys/kernel/hostname\n' > "$shim/hostname"; chmod +x "$shim/hostname"
+    export PATH="$shim:$PATH"
+fi
 
 in=$(ls /input/"$sub"/ses-1/"$sub"_T1w.nii* 2>/dev/null | head -n1)
 [ -n "$in" ] || { echo "ERROR: no T1w for $sub" >&2; exit 1; }

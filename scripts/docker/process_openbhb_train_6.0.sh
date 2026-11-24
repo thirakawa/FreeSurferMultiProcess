@@ -27,7 +27,7 @@ OUTPUT_ROOT="${OUTPUT_ROOT:-/raid/hirakawa/fs_output}"
 
 RAW_DIR="${DATA_ROOT}/${SPLIT}/rawdata"
 OUT_DIR="${OUTPUT_ROOT}/openBHB/${SPLIT}/freesurfer_${FS_VERSION}"
-WORKER="${PROJECT_DIR}/scripts/recon_worker.sh"
+WORKER="${PROJECT_DIR}/scripts/docker/recon_worker.sh"
 
 [ -d "$RAW_DIR" ] || { echo "ERROR: $RAW_DIR not found" >&2; exit 1; }
 [ "$DRY_RUN" = "1" ] || [ -f "$FS_LICENSE_FILE" ] || { echo "ERROR: license not found: $FS_LICENSE_FILE" >&2; exit 1; }

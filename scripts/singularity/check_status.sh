@@ -1,17 +1,17 @@
 #!/bin/bash
 # SUBJECTS_DIR 以下の各被験者 (sub-*) の recon-all の状態を一覧にする。
-#   scripts/check_status.sh <SUBJECTS_DIR>                     # 集計 + 完了以外の一覧
-#   scripts/check_status.sh -a <SUBJECTS_DIR>                  # 完了も含めて全員を表示
-#   scripts/check_status.sh -o <OUT_DIR> <SUBJECTS_DIR>        # 状態ごとの被験者リストを OUT_DIR に保存
-#   scripts/check_status.sh -r <RAW_DIR> <SUBJECTS_DIR>        # rawdata と比べて未着手も数える
+#   scripts/singularity/check_status.sh <SUBJECTS_DIR>                     # 集計 + 完了以外の一覧
+#   scripts/singularity/check_status.sh -a <SUBJECTS_DIR>                  # 完了も含めて全員を表示
+#   scripts/singularity/check_status.sh -o <OUT_DIR> <SUBJECTS_DIR>        # 状態ごとの被験者リストを OUT_DIR に保存
+#   scripts/singularity/check_status.sh -r <RAW_DIR> <SUBJECTS_DIR>        # rawdata と比べて未着手も数える
 #
 # 判定 (recon-all.done は FreeSurfer 8 では失敗時にも作られる ("1" だけ書かれる) ので、それだけでは判定しない)
 #   done        : recon-all.done に END_TIME があり、それより新しい recon-all.error がない
 #   timeout     : recon-all.timeout がある (JOB_TIMEOUT を過ぎたため recon_worker.sh が止めた。止めた時点のステップを表示)
 #   failed      : recon-all.error がある (失敗したステップと原因を表示)
-#   running     : IsRunning.* があり、その HOST が実行中の Docker コンテナ
-#   interrupted : IsRunning.* があるが、そのコンテナはもう動いていない (docker stop 等で中断)
-#   running?    : IsRunning.* があるが、実行中かどうか判断できない (Singularity / 別ホスト)
+#   running     : IsRunning.* があり、その HOST (ノード名) で自分の Slurm ジョブが動いている
+#   interrupted : IsRunning.* があるが、HOST のノードで自分の Slurm ジョブが動いていない (時間切れ・scancel 等で中断)
+#   running?    : IsRunning.* があるが、実行中かどうか判断できない (HOST が空・Slurm のノードではない・squeue が使えない)
 #   incomplete  : 上のどれでもない (ディレクトリだけ作られて止まった等)
 #   not_started : rawdata にあるが SUBJECTS_DIR にない (-r 指定時のみ)
 set -uo pipefail
@@ -32,9 +32,12 @@ shift $((OPTIND - 1))
 SD="${1%/}"
 [ -d "$SD" ] || { echo "ERROR: $SD not found" >&2; exit 1; }
 
-# 実行中の Docker コンテナ ID (IsRunning の HOST はコンテナ ID 先頭12桁)
-RUNNING_IDS=""; HAVE_DOCKER=0
-if command -v docker >/dev/null 2>&1 && RUNNING_IDS="$(docker ps -q 2>/dev/null)"; then HAVE_DOCKER=1; fi
+# Slurm で実行中のノード (自分のジョブのうち RUNNING のもの)。Singularity では IsRunning の HOST がノード名になる
+RUNNING_NODES=""; HAVE_SLURM=0
+if command -v squeue >/dev/null 2>&1 && nl="$(squeue -h -u "$USER" -t RUNNING -o %N 2>/dev/null)"; then
+    HAVE_SLURM=1
+    for n in $nl; do RUNNING_NODES+="$(scontrol show hostnames "$n" 2>/dev/null)"$'\n'; done
+fi
 
 # 失敗の原因を recon-all.log から推定する
 failure_reason() {
@@ -74,8 +77,9 @@ for d in "$SD"/sub-*/; do
     elif ls "$sc"/IsRunning.* >/dev/null 2>&1; then
         host="$(awk '/^HOST/ {print $2; exit}' "$(ls "$sc"/IsRunning.* | head -n 1)")"
         step="$(tail -n 1 "$sc/recon-all-status.log" 2>/dev/null | sed 's/^#@# *//' | cut -c1-40)"; step="${step:--}"
-        if [ "$HAVE_DOCKER" = 1 ] && [[ "$host" =~ ^[0-9a-f]{12}$ ]]; then
-            if grep -q "^$host" <<< "$RUNNING_IDS"; then status="running"; else status="interrupted"; reason="container $host は停止済み"; fi
+        if [ "$HAVE_SLURM" = 1 ] && [ -n "$host" ] && sinfo -h -n "$host" -o %N 2>/dev/null | grep -qx "$host"; then
+            # HOST が Slurm のノード: そのノードで自分のジョブが動いていれば running、なければ interrupted
+            if grep -qx "$host" <<< "$RUNNING_NODES"; then status="running"; reason="node $host"; else status="interrupted"; reason="node $host で自分のジョブは動いていない"; fi
         else
             status="running?"; reason="host=$host"
         fi

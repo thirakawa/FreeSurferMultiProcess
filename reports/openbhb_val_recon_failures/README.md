@@ -2,7 +2,7 @@
 
 - 作成日: 2026-11-24
 - 対象: `/raid/hirakawa/fs_output/openBHB/val/freesurfer_{6.0,7.4.1,8.2.0}`
-- 判定: [`scripts/check_status.sh`](../../scripts/check_status.sh) と同じ基準
+- 判定: [`scripts/docker/check_status.sh`](../../scripts/docker/check_status.sh) と同じ基準
   (`recon-all.done` に `END_TIME` があり、それより新しい `recon-all.error` がない = 完了)
 - 被験者ごとの状態の表: [`failure_status_by_version.tsv`](failure_status_by_version.tsv)
   (3バージョンすべてで完了しなかった 22 人 × バージョンごとの状態・ステップ・原因)
