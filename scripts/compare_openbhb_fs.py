@@ -7,9 +7,9 @@
 自分の結果: <OUTPUT_ROOT>/openBHB/<split>/freesurfer_<ver>/sub-*/stats/?h.aparc.stats, ?h.aparc.a2009s.stats
 
 使い方:
-  python3 scripts/compare_openbhb_fs.py [--split val] [--versions 6.0 7.4.1 8.2.0] [--out reports/openbhb_val_vs_published]
+  python3 scripts/compare_openbhb_fs.py [--split val] [--versions 6.0 7.4.1 8.2.0] [--out reports/openbhb_<split>_vs_published_freesurfer]
 出力 (--out):
-  summary.txt               まとめ (チャンネル別の一致度、バージョン比較、サイト別、外れ値)
+  summary.md                まとめ (Markdown) (チャンネル別の一致度、バージョン比較、サイト別、外れ値)
   roi_metrics.tsv           バージョン x アトラス x チャンネル x ROI ごとの一致度
   subject_metrics.tsv       バージョン x 被験者ごとの一致度 (Desikan 平均厚さ等)
   global_metrics.tsv        全脳の指標 (総表面積、総灰白質体積、平均厚さ) の被験者ごとの値
@@ -114,7 +114,7 @@ def main():
     ap.add_argument("--output-root", default="/raid/hirakawa/fs_output")
     ap.add_argument("--out", default=None)
     a = ap.parse_args()
-    out = a.out or f"reports/openbhb_{a.split}_vs_published"
+    out = a.out or f"reports/openbhb_{a.split}_vs_published_freesurfer"
     os.makedirs(out, exist_ok=True)
 
     deriv = os.path.join(a.data_root, a.split, "derivatives")
@@ -152,24 +152,35 @@ def main():
 
     common = sorted(set(ref["desikan"]).intersection(*[ours[v]["desikan"] for v in a.versions]))
 
+    def row(*cells):
+        return "| " + " | ".join(str(c) for c in cells) + " |"
+
+    def sep(spec):
+        # spec: 各列の揃え ("l" or "r")
+        return "|" + "|".join("---" if s == "l" else "---:" for s in spec) + "|"
+
     lines = []
     P = lines.append
-    P("=" * 96)
-    P(f"OpenBHB {a.split}: 公開されている FreeSurfer ROI 特徴量 と 自分で実行した recon-all の比較")
-    P("=" * 96)
-    P(f"公開データ: {deriv}/sub-*/ses-1/*_preproc-freesurfer_desc-{{desikan,destrieux}}_ROI.npy")
-    P(f"自分の結果: {a.output_root}/openBHB/{a.split}/freesurfer_<ver>/sub-*/stats/?h.aparc(.a2009s).stats")
-    P(f"公開データの被験者数: {len(ref['desikan'])}")
-    for v in a.versions:
-        P(f"  {v:6s} 完了: {len(ours[v]['desikan'])}")
-    P(f"3バージョンすべて完了 かつ 公開データあり (共通集合): {len(common)} 人  ※ 以下の比較はこの共通集合で行う")
+    P(f"# OpenBHB {a.split}: 公開 FreeSurfer ROI 特徴量 と 自分の recon-all 結果の比較 (数値の詳細)")
     P("")
-    P("指標:")
-    P("  r      : 被験者間の Pearson 相関 (ROI ごとに計算し、ROI 間の中央値)")
-    P("  ICC    : ICC(A,1) 絶対一致 (ROI ごと、中央値)。1 に近いほど値そのものが一致")
-    P("  bias%  : (自分 - 公開) / 公開 の平均 (ROI ごと、中央値)。正なら自分の方が大きい")
-    P("  |d|%   : |自分 - 公開| / 公開 の平均 (ROI ごと、中央値)")
-    P("  exact% : 値が完全に一致した (被験者, ROI) の割合 (stats ファイルの丸め桁で比較)")
+    P(f"このファイルは [`scripts/compare_openbhb_fs.py`](../../scripts/compare_openbhb_fs.py) が自動で作る。"
+      "考察は [README.md](README.md) を参照。")
+    P("")
+    P(f"- 公開データ: `{deriv}/sub-*/ses-1/*_preproc-freesurfer_desc-{{desikan,destrieux}}_ROI.npy`")
+    P(f"- 自分の結果: `{a.output_root}/openBHB/{a.split}/freesurfer_<ver>/sub-*/stats/?h.aparc(.a2009s).stats`")
+    P(f"- 公開データの被験者数: {len(ref['desikan'])}")
+    P("- 完了した被験者数: " + "、".join(f"{v} = {len(ours[v]['desikan'])}" for v in a.versions))
+    P(f"- **比較に使った被験者: {len(common)} 人** (すべてのバージョンで完了し、公開データもある被験者)")
+    P("")
+    P("## 指標")
+    P("")
+    P("| 指標 | 意味 |")
+    P("|---|---|")
+    P("| r | 被験者間の Pearson 相関 (ROI ごとに計算し、ROI 間の中央値) |")
+    P("| ICC | ICC(A,1) 絶対一致 (ROI ごと、中央値)。1 に近いほど値そのものが一致 |")
+    P("| bias% | (自分 − 公開) / 公開 の平均 (ROI ごと、中央値)。正なら自分の方が大きい |")
+    P("| \\|d\\|% | \\|自分 − 公開\\| / 公開 の平均 (ROI ごと、中央値) |")
+    P("| exact% | 値が完全に一致した (被験者, ROI) の割合 (stats ファイルの丸め桁で比較) |")
     P("")
 
     roi_rows, subj_rows, glob_rows = [], [], []
@@ -195,16 +206,18 @@ def main():
                                                   exact=exact, worst_roi=labels[k][int(np.nanargmin(iccs))],
                                                   worst_icc=float(np.nanmin(iccs)))
 
+    P("## 1. チャンネル別の一致度")
+    P("")
     for k in ATLASES:
-        P("-" * 96)
-        P(f"[{k}] ({len(labels[k])} ROI)  チャンネル別の一致度 (共通 {len(common)} 人)")
-        P("-" * 96)
-        P(f"{'channel':10s} {'ver':6s} {'r':>7s} {'ICC':>7s} {'bias%':>8s} {'|d|%':>7s} {'exact%':>7s}   最も一致しない ROI (ICC)")
+        P(f"### {k.capitalize()} ({len(labels[k])} ROI)")
+        P("")
+        P(row("channel", "version", "r", "ICC", "bias%", "\\|d\\|%", "exact%", "最も一致しない ROI (ICC)"))
+        P(sep("llrrrrrl"))
         for c in SHORT:
             for v in a.versions:
                 m = summary[(v, k, c)]
-                P(f"{c:10s} {v:6s} {m['r']:7.3f} {m['icc']:7.3f} {m['bias']:8.2f} {m['apd']:7.2f} {m['exact']:7.2f}   "
-                  f"{m['worst_roi']} ({m['worst_icc']:.3f})")
+                P(row(c, v, f"{m['r']:.3f}", f"{m['icc']:.3f}", f"{m['bias']:.2f}", f"{m['apd']:.2f}",
+                      f"{m['exact']:.2f}", f"{m['worst_roi']} ({m['worst_icc']:.3f})"))
         P("")
 
     # ---- 全脳の指標 ----
@@ -213,10 +226,12 @@ def main():
         tot_area = np.nansum(area)
         return tot_area, np.nansum(vol), np.nansum(th * area) / tot_area
 
-    P("-" * 96)
-    P("全脳の指標 (Desikan 68 ROI の合計 / 面積で重み付けした平均厚さ)")
-    P("-" * 96)
-    P(f"{'metric':22s} {'ver':6s} {'r':>7s} {'ICC':>7s} {'bias%':>8s} {'|d|%':>7s}  {'自分(平均)':>11s} {'公開(平均)':>11s}")
+    P("## 2. 全脳の指標")
+    P("")
+    P("Desikan 68 ROI の合計 (表面積・灰白質体積) と、面積で重み付けした平均厚さ。")
+    P("")
+    P(row("metric", "version", "r", "ICC", "bias%", "\\|d\\|%", "自分 (平均)", "公開 (平均)"))
+    P(sep("llrrrrrr"))
     gnames = ["total_area_mm2", "total_gm_volume_mm3", "mean_thickness_mm"]
     G = {v: np.array([glob(ours[v]["desikan"][s]) for s in common]) for v in a.versions}
     GR = np.array([glob(ref["desikan"][s]) for s in common])
@@ -224,34 +239,38 @@ def main():
         for v in a.versions:
             x, y = G[v][:, gi], GR[:, gi]
             rel = (x - y) / y
-            P(f"{gn:22s} {v:6s} {pearson(x, y):7.3f} {icc_a1(x, y):7.3f} {np.mean(rel) * 100:8.2f} "
-              f"{np.mean(np.abs(rel)) * 100:7.2f}  {x.mean():11.2f} {y.mean():11.2f}")
+            P(row(gn, v, f"{pearson(x, y):.3f}", f"{icc_a1(x, y):.3f}", f"{np.mean(rel) * 100:.2f}",
+                  f"{np.mean(np.abs(rel)) * 100:.2f}", f"{x.mean():.2f}", f"{y.mean():.2f}"))
     for i, s in enumerate(common):
         glob_rows.append([s, site.get(s, "?")] + [f"{GR[i, g]:.4f}" for g in range(3)] +
                          [f"{G[v][i, g]:.4f}" for v in a.versions for g in range(3)])
     P("")
 
-    # ---- バージョン同士の比較 (参考: 公開データとの差がバージョン間の差と比べてどの程度か) ----
-    P("-" * 96)
-    P("参考: バージョン同士の一致度 (Desikan、ICC の ROI 中央値)。公開データとの差の大きさの目安")
-    P("-" * 96)
+    # ---- バージョン同士の比較 ----
+    P("## 3. バージョン同士の一致度 (参考)")
+    P("")
+    P("Desikan、ICC の ROI 中央値。公開データとの差が、バージョン間の差と比べてどの程度かの目安。")
+    P("")
     pairs = [(a.versions[i], a.versions[j]) for i in range(len(a.versions)) for j in range(i + 1, len(a.versions))]
-    P(f"{'channel':10s} " + " ".join(f"{p[0] + ' vs ' + p[1]:>16s}" for p in pairs) + "   " +
-      " ".join(f"{v + ' vs 公開':>14s}" for v in a.versions))
+    P(row("channel", *[f"{p} vs {q}" for p, q in pairs], *[f"{v} vs 公開" for v in a.versions]))
+    P(sep("l" + "r" * (len(pairs) + len(a.versions))))
     for c in range(7):
         vals = []
         for v1, v2 in pairs:
             X = np.stack([ours[v1]["desikan"][s][c] for s in common])
             Y = np.stack([ours[v2]["desikan"][s][c] for s in common])
             vals.append(med([icc_a1(X[:, j], Y[:, j]) for j in range(X.shape[1])]))
-        P(f"{SHORT[c]:10s} " + " ".join(f"{x:16.3f}" for x in vals) + "   " +
-          " ".join(f"{summary[(v, 'desikan', SHORT[c])]['icc']:14.3f}" for v in a.versions))
+        P(row(SHORT[c], *[f"{x:.3f}" for x in vals],
+              *[f"{summary[(v, 'desikan', SHORT[c])]['icc']:.3f}" for v in a.versions]))
     P("")
 
     # ---- 被験者ごと ----
-    P("-" * 96)
-    P("被験者ごとの一致度 (Desikan 平均厚さ: 68 ROI の |d|% の平均 と ROI 間の相関)")
-    P("-" * 96)
+    P("## 4. 被験者ごとの一致度")
+    P("")
+    P("Desikan の平均厚さについて、68 ROI の \\|d\\|% の平均 (被験者ごと) と、ROI 間の相関。")
+    P("")
+    P(row("version", "\\|d\\|% 中央値", "25%", "75%", "最大", "\\|d\\|% > 10 の人数", "ROI 間相関の中央値"))
+    P(sep("lrrrrrr"))
     subj_apd = {}
     for v in a.versions:
         apds, rs = [], []
@@ -265,54 +284,63 @@ def main():
             subj_apd[(v, s)] = ad
             subj_rows.append([v, s, site.get(s, "?"), f"{ad:.3f}", f"{rr:.4f}", f"{ada:.3f}"])
         apds = np.array(apds)
-        P(f"{v:6s} thickness |d|%: 中央値 {np.median(apds):.2f}  四分位 [{np.percentile(apds, 25):.2f}, "
-          f"{np.percentile(apds, 75):.2f}]  最大 {apds.max():.2f}  |d|%>10 の人数 {int((apds > 10).sum())}   "
-          f"ROI間相関の中央値 {np.nanmedian(rs):.3f}")
+        P(row(v, f"{np.median(apds):.2f}", f"{np.percentile(apds, 25):.2f}", f"{np.percentile(apds, 75):.2f}",
+              f"{apds.max():.2f}", int((apds > 10).sum()), f"{np.nanmedian(rs):.3f}"))
     P("")
 
     # ---- サイト別 ----
-    P("-" * 96)
-    P("サイト別 (Desikan 平均厚さ |d|% の被験者中央値。人数の多い順、上位 15 サイト)")
-    P("-" * 96)
+    P("## 5. サイト別")
+    P("")
+    P("Desikan 平均厚さの \\|d\\|% (被験者の中央値)。人数の多い順に上位 15 サイト。")
+    P("")
     by_site = defaultdict(list)
     for s in common:
         by_site[site.get(s, "?")].append(s)
-    P(f"{'site':>6s} {'n':>4s} " + " ".join(f"{v:>8s}" for v in a.versions))
+    P(row("site", "n", *a.versions))
+    P(sep("r" * (2 + len(a.versions))))
     for st, ss in sorted(by_site.items(), key=lambda t: -len(t[1]))[:15]:
-        P(f"{st:>6s} {len(ss):4d} " + " ".join(f"{np.median([subj_apd[(v, s)] for s in ss]):8.2f}" for v in a.versions))
-    # 差の大きいサイト
+        P(row(st, len(ss), *[f"{np.median([subj_apd[(v, s)] for s in ss]):.2f}" for v in a.versions]))
     P("")
     worst = sorted(by_site.items(), key=lambda t: -np.median([subj_apd[(a.versions[0], s)] for s in t[1]]))[:5]
-    P(f"差が大きいサイト ({a.versions[0]} の |d|% 中央値の大きい順): " +
+    P(f"差が大きいサイト ({a.versions[0]} の \\|d\\|% 中央値の大きい順): " +
       ", ".join(f"site {st} (n={len(ss)}, {np.median([subj_apd[(a.versions[0], s)] for s in ss]):.2f}%)" for st, ss in worst))
     P("")
 
     # ---- 外れ値 ----
-    P("-" * 96)
-    P("公開データとの差が大きい被験者 (Desikan 平均厚さ |d|%、各バージョン上位 10 人)")
-    P("-" * 96)
-    for v in a.versions:
-        top = sorted(common, key=lambda s: -subj_apd[(v, s)])[:10]
-        P(f"{v}: " + ", ".join(f"{s}(site {site.get(s, '?')}, {subj_apd[(v, s)]:.1f}%)" for s in top))
+    P("## 6. 公開データとの差が大きい被験者")
+    P("")
+    P("Desikan 平均厚さの \\|d\\|%。各バージョンの上位 10 人。")
+    P("")
+    P(row("順位", *a.versions))
+    P(sep("r" + "l" * len(a.versions)))
+    tops = {v: sorted(common, key=lambda s: -subj_apd[(v, s)])[:10] for v in a.versions}
+    for i in range(10):
+        P(row(i + 1, *[f"{tops[v][i]} (site {site.get(tops[v][i], '?')}, {subj_apd[(v, tops[v][i])]:.1f}%)"
+                       for v in a.versions]))
     P("")
 
     # ---- 公開データにあるが自分の結果で完了していない被験者 ----
-    P("-" * 96)
-    P("公開データには値があるが、自分の実行で完了していない被験者")
-    P("-" * 96)
+    P("## 7. 公開データには値があるが、自分の実行では完了していない被験者")
+    P("")
+    P(row("version", "人数", "site の内訳"))
+    P(sep("lrl"))
     for v in a.versions:
         miss = sorted(set(ref["desikan"]) - set(ours[v]["desikan"]))
-        P(f"{v}: {len(miss)} 人 (site: " + ", ".join(f"{k}={n}" for k, n in sorted(
-            {st: sum(site.get(s) == st for s in miss) for st in {site.get(s) for s in miss}}.items())) + ")")
+        cnt = defaultdict(int)
+        for s in miss:
+            cnt[site.get(s, "?")] += 1
+        P(row(v, len(miss), ", ".join(f"site {k}: {n}" for k, n in sorted(cnt.items()))))
+    P("")
     s38 = [s for s in ref["desikan"] if site.get(s) == "38"]
     if s38:
-        th = np.array([np.nansum(ref["desikan"][s][2] * ref["desikan"][s][0]) / np.nansum(ref["desikan"][s][0]) for s in s38])
-        others = [s for s in ref["desikan"] if site.get(s) != "38"]
-        tho = np.array([np.nansum(ref["desikan"][s][2] * ref["desikan"][s][0]) / np.nansum(ref["desikan"][s][0]) for s in others])
-        P(f"参考: 公開データの site 38 ({len(s38)} 人) の平均厚さ {th.mean():.3f} mm (他サイト {tho.mean():.3f} mm)")
-    P("")
+        def mth(s):
+            return np.nansum(ref["desikan"][s][2] * ref["desikan"][s][0]) / np.nansum(ref["desikan"][s][0])
+        th = np.array([mth(s) for s in s38])
+        tho = np.array([mth(s) for s in ref["desikan"] if site.get(s) != "38"])
+        P(f"参考: 公開データの site 38 ({len(s38)} 人) の平均厚さは {th.mean():.3f} mm (他サイトは {tho.mean():.3f} mm)。")
+        P("")
 
-    with open(os.path.join(out, "summary.txt"), "w") as f:
+    with open(os.path.join(out, "summary.md"), "w") as f:
         f.write("\n".join(lines) + "\n")
     with open(os.path.join(out, "roi_metrics.tsv"), "w") as f:
         f.write("version\tatlas\tchannel\troi\tpearson_r\ticc_a1\tbias_pct\tabs_diff_pct\tmean_ours\tmean_published\n")
@@ -324,7 +352,7 @@ def main():
         f.write("subject\tsite\t" + "\t".join(f"published_{g}" for g in gnames) + "\t" +
                 "\t".join(f"fs{v}_{g}" for v in a.versions for g in gnames) + "\n")
         f.writelines("\t".join(r) + "\n" for r in glob_rows)
-    print("\n".join(lines))
+    print(f"保存しました: {out}/summary.md, roi_metrics.tsv, subject_metrics.tsv, global_metrics.tsv", file=sys.stderr)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,23 @@
+subject	status_6.0	step_6.0	detail_6.0	status_7.4.1	step_7.4.1	detail_7.4.1	status_8.2.0	step_8.2.0	detail_8.2.0
+sub-122383009817	done	-	9.314h	failed	talairach_afd	ERROR: Talairach failed!	done	-	4.662h
+sub-171261643379	failed	mri_watershed	不明	failed	mri_watershed	不明	failed	mri_normalize	error: HISTOalloc(-2147483648): could not allocate histogram
+sub-178107515306	failed	mri_watershed	不明	failed	mri_watershed	ERROR: number of peaks must be > 1 for spline	failed	mri_normalize	error: HISTOalloc(-2147483648): could not allocate histogram
+sub-205481948499	failed	mri_watershed	不明	done	-	7.068h	failed	mri_normalize	error: HISTOalloc(-2147483648): could not allocate histogram
+sub-213442744017	done	-	12.514h	done	-	6.715h	failed	seg2cc	error: MRIlinearTransform: xform is singular
+sub-221041358919	failed	mri_watershed	不明	failed	mri_watershed	不明	failed	mri_normalize	error: HISTOalloc(-2147483648): could not allocate histogram
+sub-277976850330	done	-	8.301h	done	-	6.240h	failed	label-cortex	ERROR: found no voxels matching id 1 
+sub-287272151464	failed	mri_watershed	不明	failed	talairach_afd	ERROR: Talairach failed!	failed	mri_normalize	error: HISTOalloc(-2147483648): could not allocate histogram
+sub-352362867687	failed	talairach_afd	ERROR: Talairach failed!	failed	talairach_afd	ERROR: Talairach failed!	interrupted	Fix Topology lh Wed Nov 11 10:40:24 UTC 	container 5fae2441f42f は停止済み
+sub-385846642581	failed	mris_fix_topology	ERROR: MRIthickenThinWMStrands: invalid x,y,z!	failed	talairach_afd	ERROR: Talairach failed!	failed	mri_normalize	error: HISTOalloc(-2147483648): could not allocate histogram
+sub-521804912208	timeout	Fix Topology lh Sat Nov 21 19:25:21 UTC 	TIMEOUT after 24h	done	-	7.180h	done	-	3.572h
+sub-547107069770	timeout	Fix Topology lh Sat Nov 21 21:30:35 UTC 	TIMEOUT after 24h	running?	Fix Topology lh Thu Nov 19 03:08:26 UTC 	host=	interrupted	Fix Topology rh Wed Nov 11 11:48:28 UTC 	container 5fae2441f42f は停止済み
+sub-557061769391	failed	talairach_afd	ERROR: Talairach failed!	failed	talairach_afd	ERROR: Talairach failed!	done	-	4.319h
+sub-607182654630	done	-	8.802h	done	-	6.177h	failed	mri_normalize	error: HISTOalloc(-2147483648): could not allocate histogram
+sub-622282127153	done	-	10.306h	done	-	8.950h	failed	mri_normalize	error: HISTOalloc(-2147483648): could not allocate histogram
+sub-675789932781	failed	talairach_avi	ERROR: mpr2mni305 failed, see transforms/talairach_avi.log	failed	talairach_avi	ERROR: mpr2mni305 failed, see transforms/talairach_avi.log	interrupted	Fix Topology lh Wed Nov 11 10:41:55 UTC 	container 5fae2441f42f は停止済み
+sub-715300585465	failed	talairach_afd	ERROR: Talairach failed!	failed	talairach_afd	ERROR: Talairach failed!	failed	mri_normalize	error: HISTOalloc(-2147483648): could not allocate histogram
+sub-858420327833	done	-	9.876h	done	-	7.843h	interrupted	Fix Topology lh Wed Nov 11 10:42:35 UTC 	container 5fae2441f42f は停止済み
+sub-873597053285	failed	talairach_avi	ERROR: mpr2mni305 failed, see transforms/talairach_avi.log	failed	talairach_avi	ERROR: mpr2mni305 failed, see transforms/talairach_avi.log	failed	mri_normalize	error: HISTOalloc(-2147483648): could not allocate histogram
+sub-889268221373	failed	talairach_afd	ERROR: Talairach failed!	failed	mri_watershed	不明	failed	mri_normalize	error: HISTOalloc(-2147483648): could not allocate histogram
+sub-909626055335	done	-	10.323h	done	-	9.852h	failed	mri_normalize	error: HISTOalloc(-2147483648): could not allocate histogram
+sub-954854557667	done	-	9.047h	failed	talairach_afd	ERROR: Talairach failed!	interrupted	Fix Topology lh Wed Nov 11 10:40:27 UTC 	container 5fae2441f42f は停止済み

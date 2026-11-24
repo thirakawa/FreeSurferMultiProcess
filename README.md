@@ -10,9 +10,11 @@ Docker コンテナ内の GNU Parallel で、被験者単位に並列実行し�
 ├── containers/docker/        # FreeSurfer + GNU Parallel の Dockerfile と build.sh (6.0 / 7.4.1 / 8.2.0)
 ├── containers/singularity/   # 同じ内容の Singularity 定義ファイル (.def) と build.sh
 ├── fs_license/license.txt    # FreeSurfer ライセンス (git 管理しないこと)
+├── reports/                  # 解析結果のレポート (失敗のまとめ、公開データとの比較)。reports/README.md を参照
 └── scripts/
     ├── recon_worker.sh       # 被験者1人分の recon-all (Docker/Singularity 共通)
     ├── check_status.sh       # SUBJECTS_DIR の各被験者の状態 (完了/失敗/中断など) を一覧にする
+    ├── compare_openbhb_fs.py # OpenBHB 公開の FreeSurfer ROI 特徴量と自分の結果を比較する
     ├── docker/               # Docker 用 process_openbhb_<split>_<ver>.sh (6本)
     └── singularity/          # Singularity + Slurm 用 process_openbhb_<split>_<ver>.sh (6本)
 ```
